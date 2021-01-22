@@ -1,6 +1,7 @@
 use tokio::{
     io::{BufReader, stdin, AsyncWriteExt, AsyncBufReadExt},
-    net::{TcpStream, ToSocketAddrs}
+    net::{TcpStream, ToSocketAddrs},
+    // signal
 };
 use futures::{select, FutureExt};
 
@@ -20,11 +21,11 @@ async fn try_run(addr: impl ToSocketAddrs) -> Result<()> {
     
     loop {
         select! {
-            line = lines_from_server.next_line().fuse() => match line.unwrap() {
+            line = lines_from_server.next_line().fuse() => match line? {
                 Some(line) => println!("{}", line),
                 None => break
             },
-            line = lines_from_stdin.next_line().fuse() => match line.unwrap() {
+            line = lines_from_stdin.next_line().fuse() => match line? {
                 Some(line) => {
                     writer.write_all(line.as_bytes()).await?;
                     writer.write_all(b"\n").await?;
