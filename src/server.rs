@@ -55,10 +55,9 @@ async fn accept_loop(addr: impl ToSocketAddrs) -> Result<()> {
 
 async fn connection_loop(broker: Sender<Event>, stream: TcpStream) -> Result<()> {
     let (reader, writer) = stream.into_split();
-    let reader = BufReader::new(reader);
-    let mut lines = reader.lines();
+    let mut lines_from_client = BufReader::new(reader).lines();
 
-    let name = match lines.next_line().await? {
+    let name = match lines_from_client.next_line().await? {
         Some(line) => line,
         None => Err("peer disconnected immediately")?
     };
@@ -70,7 +69,7 @@ async fn connection_loop(broker: Sender<Event>, stream: TcpStream) -> Result<()>
         shutdown: shutdown_receiver
     })?;
 
-    while let Some(line) = lines.next_line().await? {
+    while let Some(line) = lines_from_client.next_line().await? {
         let (dest, msg) = match line.find(':') {
             Some(idx) => (&line[..idx], line[idx + 1 ..].trim()),
             None => continue
@@ -96,7 +95,6 @@ async fn connection_writer_loop(
     mut writer: OwnedWriteHalf,
     shutdown: Receiver<Void>
 ) -> Result<()> {
-    let messages = messages;
     let mut shutdown = shutdown;
 
     loop {
